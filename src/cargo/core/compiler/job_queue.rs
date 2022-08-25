@@ -491,7 +491,14 @@ impl<'cfg> JobQueue<'cfg> {
         // in the future this could be used to allow users to provide hints about
         // relative expected costs of units, or this could be automatically set in
         // a smarter way using timing data from a previous compilation.
-        self.queue.queue(unit.clone(), job, queue_deps, 100);
+        //
+        // HACK: manually make some crates higher priority by raising their own cost
+        let cost = match unit.pkg.package_id().name().as_str() {
+            "proc-macro2" | "syn" | "unicode-xid" | "quote" | "serde_derive" => 1000,
+            _ => 100,
+        };
+
+        self.queue.queue(unit.clone(), job, queue_deps, cost);
         *self.counts.entry(unit.pkg.package_id()).or_insert(0) += 1;
         Ok(())
     }
@@ -581,6 +588,19 @@ impl<'cfg> DrainState<'cfg> {
             if self.active.len() + self.pending_queue.len() > 1 {
                 jobserver_helper.request_token();
             }
+        }
+
+        // HACK: sort pending queue according to cost/priority so that crates with more dependants
+        // are handled first if there are multiple valid choices to pick the next crate to build
+        // from.
+        if self.pending_queue.len() > 1 {
+            self.pending_queue.sort_by(|(unit_a, _), (unit_b, _)| {
+                // Priorities are ascending, so we want to sort the pending queue higher-priorities
+                // first, the descending ordering.
+                let prio_a = self.queue.prio(unit_a);
+                let prio_b = self.queue.prio(unit_b);
+                prio_b.partial_cmp(&prio_a).unwrap()
+            });
         }
 
         // Now that we've learned of all possible work that we can execute

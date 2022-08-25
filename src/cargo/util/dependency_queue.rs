@@ -170,6 +170,10 @@ impl<N: Hash + Eq + Clone, E: Eq + Hash + Clone, V> DependencyQueue<N, E, V> {
         self.dep_map.len()
     }
 
+    pub(crate) fn prio(&self, key: &N) -> usize {
+        self.priority[key]
+    }
+
     /// Indicate that something has finished.
     ///
     /// Calling this function indicates that the `node` has produced `edge`. All
