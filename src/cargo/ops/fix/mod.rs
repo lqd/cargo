@@ -987,7 +987,7 @@ fn rustfix_and_fix(
 ) -> CargoResult<(Output, bool)> {
     // If not empty, filter by these lints.
     // TODO: implement a way to specify this.
-    let only = HashSet::new();
+    let r#only = HashSet::new();
 
     debug!("calling rustc to collect suggestions and validate previous fixes: {rustc}");
     let output = rustc.output()?;
@@ -1022,7 +1022,7 @@ fn rustfix_and_fix(
         // Parse each line of stderr, ignoring errors, as they may not all be JSON.
         .filter_map(|line| serde_json::from_str::<Diagnostic>(line).ok())
         // From each diagnostic, try to extract suggestions from rustc.
-        .filter_map(|diag| rustfix::collect_suggestions(&diag, &only, fix_mode));
+        .filter_map(|diag| rustfix::collect_suggestions(&diag, &r#only, fix_mode));
 
     // Collect suggestions by file so we can apply them one at a time later.
     let mut file_map = HashMap::new();
