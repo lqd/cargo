@@ -50,13 +50,13 @@ pub enum Filter {
 /// * `only` --- only diagnostics with code in a set of error codes would be collected.
 pub fn get_suggestions_from_json<S: ::std::hash::BuildHasher>(
     input: &str,
-    only: &HashSet<String, S>,
+    r#only: &HashSet<String, S>,
     filter: Filter,
 ) -> serde_json::error::Result<Vec<Suggestion>> {
     let mut result = Vec::new();
     for cargo_msg in serde_json::Deserializer::from_str(input).into_iter::<Diagnostic>() {
         // One diagnostic line might have multiple suggestions
-        result.extend(collect_suggestions(&cargo_msg?, only, filter));
+        result.extend(collect_suggestions(&cargo_msg?, r#only, filter));
     }
     Ok(result)
 }
@@ -152,12 +152,12 @@ fn collect_span(span: &DiagnosticSpan) -> Option<Replacement> {
 /// * `only` --- only diagnostics with code in a set of error codes would be collected.
 pub fn collect_suggestions<S: ::std::hash::BuildHasher>(
     diagnostic: &Diagnostic,
-    only: &HashSet<String, S>,
+    r#only: &HashSet<String, S>,
     filter: Filter,
 ) -> Option<Suggestion> {
-    if !only.is_empty() {
+    if !r#only.is_empty() {
         if let Some(ref code) = diagnostic.code {
-            if !only.contains(&code.code) {
+            if !r#only.contains(&code.code) {
                 // This is not the code we are looking for
                 return None;
             }
